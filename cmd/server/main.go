@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 func main() {
@@ -24,6 +25,18 @@ func main() {
 		if err != nil {
 			handlers.RenderErrorPage(w, "Error", "Failed to load artists. Please try again later.")
 			return
+		}
+
+		// Filter artists if a search query is present
+		query := r.URL.Query().Get("search")
+		if query != "" {
+			filteredArtists := []api.Artist{}
+			for _, artist := range artists {
+				if containsIgnoreCase(artist.Name, query) {
+					filteredArtists = append(filteredArtists, artist)
+				}
+			}
+			artists = filteredArtists
 		}
 
 		// Render the main page with the artists data
@@ -53,4 +66,9 @@ func main() {
 	// Start the server
 	log.Println("Server is running on port 8080...")
 	log.Fatal(http.ListenAndServe(":8080", mux))
+}
+
+// Utility function to check if a string contains another string, case-insensitively
+func containsIgnoreCase(str, substr string) bool {
+	return strings.Contains(strings.ToLower(str), strings.ToLower(substr))
 }
