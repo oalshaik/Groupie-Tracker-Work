@@ -16,8 +16,35 @@
     <div id="loading" style="display: none;">Loading...</div>
     
     <!-- Artists list will be hidden initially until data is fetched -->
-    <div id="artists-list" style="display: none;"></div>
+    <div id="artists-list" style="display: grid;">
+        {{ if . }}
+            {{ range . }}
+            <div class="artist" onclick="window.location.href='/artists/{{.ID}}'">
+                <img src="{{.Image}}" alt="{{.Name}}">
+                <div class="artist-name">{{.Name}}</div>
+                <div class="artist-album">First Album: {{.FirstAlbum}}</div>
+            </div>
+            {{ end }}
+        {{ else }}
+            <p>Failed to load artists. Please try again later.</p>
+        {{ end }}
+    </div>
     
-    <script src="/static/js/main.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const searchInput = document.getElementById('search');
+            const artistsList = document.getElementById('artists-list');
+            const artists = Array.from(artistsList.getElementsByClassName('artist'));
+
+            // Event listener for search input
+            searchInput.addEventListener('input', function() {
+                const filter = searchInput.value.toLowerCase();
+                artists.forEach(artist => {
+                    const name = artist.querySelector('.artist-name').textContent.toLowerCase();
+                    artist.style.display = name.includes(filter) ? '' : 'none';
+                });
+            });
+        });
+    </script>
 </body>
 </html>

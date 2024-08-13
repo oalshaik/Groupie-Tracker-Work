@@ -1,39 +1,54 @@
 package main
 
 import (
+	"groupie-trackers/pkg/api"
+	"groupie-trackers/pkg/handlers"
 	"html/template"
 	"log"
 	"net/http"
 	"strconv"
-
-	"groupie-trackers/pkg/handlers"
 )
 
 func main() {
 	mux := http.NewServeMux()
 
-	// Serve static files
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./web/static/"))))
-
-	// Handle routes
-	mux.HandleFunc("/artists", handlers.HandleArtists)
-	mux.HandleFunc("/artists/", func(w http.ResponseWriter, r *http.Request) {
-		// Extract the ID from the URL path
-		idStr := r.URL.Path[len("/artists/"):]
-		id, err := strconv.Atoi(idStr)
-		if err != nil {
-			http.Error(w, "Invalid artist ID", http.StatusBadRequest)
+	// Handle the main page with preloaded artists
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			handlers.RenderErrorPage(w, "Page Not Found", "The page you are looking for does not exist.")
 			return
 		}
-		// Call the handler with the parsed ID
+
+		// Fetch artists data to display on the main page
+		artists, err := api.FetchArtists("https://groupietrackers.herokuapp.com/api/artists")
+		if err != nil {
+			handlers.RenderErrorPage(w, "Error", "Failed to load artists. Please try again later.")
+			return
+		}
+
+		// Render the main page with the artists data
+		tmpl := template.Must(template.ParseFiles("web/templates/index.html"))
+		tmpl.Execute(w, artists) // Pass artists data to the template
+	})
+
+	// Handle artist details pages
+	mux.HandleFunc("/artists/", func(w http.ResponseWriter, r *http.Request) {
+		idStr := r.URL.Path[len("/artists/"):]
+		id, err := strconv.Atoi(idStr)
+		if err != nil || idStr == "" {
+			handlers.RenderErrorPage(w, "Invalid Artist ID", "The artist ID provided is not valid.")
+			return
+		}
 		handlers.HandleArtistByID(w, r, id)
 	})
 
-	// Serve the main HTML page
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		tmpl := template.Must(template.ParseFiles("web/templates/index.html"))
-		tmpl.Execute(w, nil)
+	// Handle invalid paths
+	mux.HandleFunc("/artists", func(w http.ResponseWriter, r *http.Request) {
+		handlers.RenderErrorPage(w, "Page Not Found", "The page you are looking for does not exist.")
 	})
+
+	// Handle static files (CSS, JS, etc.)
+	mux.Handle("/static/", handlers.CheckFileExists(http.StripPrefix("/static/", http.FileServer(http.Dir("./web/static/")))))
 
 	// Start the server
 	log.Println("Server is running on port 8080...")
