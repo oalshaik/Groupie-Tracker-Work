@@ -7,9 +7,6 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"strconv"
-
-	"github.com/gorilla/mux"
 )
 
 func HandleArtists(w http.ResponseWriter, r *http.Request) {
@@ -27,14 +24,7 @@ func HandleArtists(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(artists)
 }
 
-func HandleArtistByID(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		http.Error(w, "Invalid artist ID", http.StatusBadRequest)
-		return
-	}
-
+func HandleArtistByID(w http.ResponseWriter, r *http.Request, id int) {
 	apiURL := fmt.Sprintf("https://groupietrackers.herokuapp.com/api/artists/%d", id)
 	log.Printf("Fetching artist data from URL: %s", apiURL)
 
