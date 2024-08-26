@@ -41,7 +41,10 @@ func main() {
 
 		// Render the main page with the artists data
 		tmpl := template.Must(template.ParseFiles("web/templates/index.html"))
-		tmpl.Execute(w, artists) // Pass artists data to the template
+		err = tmpl.Execute(w, artists) // Pass artists data to the template
+		if err != nil {
+			log.Printf("Template execution error: %v", err)
+		}
 	})
 
 	// Handle artist details pages
@@ -55,13 +58,13 @@ func main() {
 		handlers.HandleArtistByID(w, r, id)
 	})
 
-	// Handle invalid paths
+	// Handle invalid paths for /artists
 	mux.HandleFunc("/artists", func(w http.ResponseWriter, r *http.Request) {
 		handlers.RenderErrorPage(w, "Page Not Found", "The page you are looking for does not exist.")
 	})
 
-	// Handle static files (CSS, JS, etc.)
-	mux.Handle("/static/", handlers.CheckFileExists(http.StripPrefix("/static/", http.FileServer(http.Dir("./web/static/")))))
+	// Serve static files (CSS, JS, etc.)
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./web/static/"))))
 
 	// Start the server
 	log.Println("Server is running on port 8080...")
